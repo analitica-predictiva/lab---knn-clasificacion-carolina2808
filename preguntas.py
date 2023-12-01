@@ -9,141 +9,69 @@ import pandas as pd
 
 def pregunta_01():
     """
-    Carga de datos.
-    -------------------------------------------------------------------------------------
+    Complete el código presentado a continuación.
     """
-    # Lea el archivo `insurance.csv` y asígnelo al DataFrame `df`
-    df = pd.read_csv('insurance.csv')
+    # Lea el archivo de datos
+    df = pd.read_csv("house-votes-84.csv", sep=",")
 
-    # Asigne la columna `charges` a la variable `y`.
-    y = df['charges']
+    # Cree un vector con la variable de respuesta ('party')
+    y = df['party'].values
 
-    # Asigne una copia del dataframe `df` a la variable `X`.
-    X = df.copy()
+    # Extraiga las variables de entrada
+    X = df.drop('party', axis=1).values
 
-    # Remueva la columna `charges` del DataFrame `X`.
-    X.drop('charges', axis=1, inplace=True)
+    # Importe el transformador OrdinalEncoder
+    from sklearn.preprocessing import OrdinalEncoder
 
-    # Retorne `X` y `y`
-    return X, y
+    # Transforme las variables de entrada usando fit_transform
+    X = OrdinalEncoder().fit_transform(X)
+
+    # Importe KNeighborsClassifier de sklearn.neighbors
+    from sklearn.neighbors import KNeighborsClassifier
+
+    # Cree un un clasificador k-NN con 6 vecinos
+    knn = KNeighborsClassifier(n_neighbors=6)
+
+    # Entrene el clasificador con el conjunto de entrenamiento
+    knn.fit(X, y)
+
+    # Retorne el score del clasificador
+    return knn.score(X, y)
 
 
 def pregunta_02():
     """
-    Preparación de los conjuntos de datos.
-    -------------------------------------------------------------------------------------
+    Complete el código presentado a continuación.
     """
-    # Importe train_test_split
-    from sklearn.model_selection import train_test_split
+    # Lea el archivo de datos
+    df = pd.read_csv("house-votes-84.csv", sep=",")
 
-    # Cargue los datos y asígne los resultados a `X` y `y`.
-    X, y = pregunta_01()
+    # Cree un vector con la variable de respuesta ('party')
+    y = df['party'].values
 
-    # Divida los datos de entrenamiento y prueba. La semilla del generador de números
-    # aleatorios es 12345. Use 300 patrones para la muestra de prueba.
-    X_train, X_test, y_train, y_test = train_test_split(
-        X, y, test_size=300, random_state=12345
-    )
+    # Extraiga las variables de entrada
+    X = df.drop('party', axis=1).values
 
-    # Retorne `X_train`, `X_test`, `y_train` y `y_test`
-    return X_train, X_test, y_train, y_test
+    # Importe el transformador OrdinalEncoder
+    from sklearn.preprocessing import OrdinalEncoder
 
+    # Transforme las variables de entrada usando fit_transform
+    X = OrdinalEncoder().fit_transform(X)
 
-def pregunta_03():
-    """
-    Especificación del pipeline y entrenamiento
-    -------------------------------------------------------------------------------------
-    """
-    # Importe make_column_selector
-    # Importe make_column_transformer
-    # Importe SelectKBest
-    # Importe f_regression
-    # Importe LinearRegression
-    # Importe GridSearchCV
-    # Importe Pipeline
-    # Importe OneHotEncoder
-    from sklearn.compose import make_column_transformer
-    from sklearn.feature_selection import SelectKBest, f_regression
-    from sklearn.linear_model import LinearRegression
-    from sklearn.model_selection import GridSearchCV
-    from sklearn.pipeline import Pipeline
-    from sklearn.preprocessing import OneHotEncoder
+    # Importe KNeighborsClassifier de sklearn.neighbors
+    from sklearn.neighbors import KNeighborsClassifier
 
-    pipeline = Pipeline(
-        steps=[
-            # Paso 1: Construya un column_transformer que aplica OneHotEncoder a las
-            # variables categóricas, y no aplica ninguna transformación al resto de
-            # las variables.
-            (
-                "column_transformer",
-                make_column_transformer(
-                    (OneHotEncoder(), ['sex', 'smoker', 'region']),
-                    remainder='passthrough'
-                ),
-            ),
-            # Paso 2: Construya un selector de características que seleccione las K
-            # características más importantes. Utilice la función f_regression.
-            (
-                "selectKBest",
-                SelectKBest(f_regression, k=5),
-            ),
-            # Paso 3: Construya un modelo de regresión lineal.
-            (
-                "linear_regression",
-                LinearRegression(),
-            ),
-        ],
-    )
+    # Cree un un clasificador k-NN con 6 vecinos
+    knn = KNeighborsClassifier(n_neighbors=6)
 
-    # Carga de las variables.
-    X_train, _, y_train, _ = pregunta_02()
+    # Entrene el clasificador con el conjunto de entrenamiento
+    knn.fit(X, y)
 
-    # Defina un diccionario de parámetros para el GridSearchCV. Se deben
-    # considerar valores desde 1 hasta 11 regresores para el modelo
-    param_grid = {
-        'selectKBest__k': range(1, 12),
-    }
+    # Pronostique el resultado para el conjunto de entrenamiento
+    y_pred = knn.predict(X)
 
-    # Defina una instancia de GridSearchCV con el pipeline y el diccionario de
-    # parámetros. Use cv = 5, y como métrica de evaluación el valor negativo del
-    # error cuadrático medio.
-    gridSearchCV = GridSearchCV(
-        estimator=pipeline,
-        param_grid=param_grid,
-        cv=5,
-        scoring='neg_mean_squared_error',
-        refit=True,
-        return_train_score=True,
-    )
+    # Importe la función confusion_matrix de sklearn.metrics
+    from sklearn.metrics import confusion_matrix
 
-    # Búsqueda de la mejor combinación de regresores
-    gridSearchCV.fit(X_train, y_train)
-
-    # Retorne el mejor modelo
-    return gridSearchCV
-
-def pregunta_04():
-    """
-    Evaluación del modelo
-    -------------------------------------------------------------------------------------
-    """
-    # Importe mean_squared_error
-    from sklearn.metrics import mean_squared_error
-
-    # Obtenga el pipeline óptimo de la pregunta 3.
-    gridSearchCV = pregunta_03()
-
-    # Cargue las variables.
-    X_train, X_test, y_train, y_test = pregunta_02()
-
-    # Evalúe el modelo con los conjuntos de entrenamiento y prueba.
-    y_train_pred = gridSearchCV.predict(X_train)
-    y_test_pred = gridSearchCV.predict(X_test)
-
-    # Compute el error cuadrático medio de entrenamiento y prueba. Redondee los
-    # valores a dos decimales.
-    mse_train = mean_squared_error(y_train, y_train_pred).round(2)
-    mse_test = mean_squared_error(y_test, y_test_pred).round(2)
-
-    # Retorne el error cuadrático medio para entrenamiento y prueba
-    return mse_train, mse_test
+    # Retorne la matriz de confusión
+    return confusion_matrix(y, y_pred)
